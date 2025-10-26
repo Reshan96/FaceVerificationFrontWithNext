@@ -1,9 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import ThemeRegistry from "@/components/ThemeRegistry";
 
 export const metadata: Metadata = {
-  title: "Optiero",
-  description: "Face verification kiosk",
+   title: "Face Verification",
+  description: "Face-based attendance system",
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1976d2"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

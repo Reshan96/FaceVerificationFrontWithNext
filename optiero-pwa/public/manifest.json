@@ -1,0 +1,13 @@
+{
+  "name": "Face Verification",
+  "short_name": "FaceVerify",
+  "description": "AI-powered attendance via face verification",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#1976d2",
+  "orientation": "portrait",
+  "icons": [
+ 
+  ]
+}
