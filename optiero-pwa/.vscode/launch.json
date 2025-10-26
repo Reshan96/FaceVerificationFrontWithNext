@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Runs `npm run dev` under the Node debugger (server-side code)
+      "type": "node",
+      "request": "launch",
+      "name": "Next.js: debug server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "env": { "NODE_OPTIONS": "--inspect" },
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Launches a Chrome instance and attaches to your client-side code
+      "type": "pwa-chrome",
+      "request": "launch",
+      "name": "Next.js: debug client (Chrome)",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Next.js: full-stack debug",
+      "configurations": [
+        "Next.js: debug server",
+        "Next.js: debug client (Chrome)"
+      ]
+    }
+  ]
+}

@@ -46,7 +46,7 @@ export default function GlassButton(props: ButtonProps) {
           theme.palette.mode === "light"
             ? "linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.55)), radial-gradient(120% 120% at 50% 0%, rgba(107,167,255,.45), transparent)"
             : "linear-gradient(180deg, rgba(20,28,48,.85), rgba(20,28,48,.65)), radial-gradient(120% 120% at 50% 0%, rgba(107,167,255,.35), transparent)",
-        border: "1px solid rgba(255,255,255,0.3)",
+        border: "1px solid rgba(255,255,255,0.22)",
         boxShadow:
           theme.palette.mode === "light"
             ? "0 10px 26px rgba(0,0,0,.18), 0 0 0 2px rgba(107,167,255,.25) inset"
@@ -60,7 +60,7 @@ export default function GlassButton(props: ButtonProps) {
         "&:hover": {
           background:
             theme.palette.mode === "light"
-              ? "linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.65)), radial-gradient(120% 120% at 50% 0%, rgba(107,167,255,.55), transparent)"
+              ? "linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.42)), radial-gradient(120% 120% at 50% 0%, rgba(107,167,255,.30), transparent)"
               : "linear-gradient(180deg, rgba(26,34,56,.92), rgba(26,34,56,.72)), radial-gradient(120% 120% at 50% 0%, rgba(107,167,255,.45), transparent)",
           boxShadow:
             theme.palette.mode === "light"
