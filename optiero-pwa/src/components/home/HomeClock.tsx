@@ -6,11 +6,10 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
   useTheme,
 } from "@mui/material";
 import GlassButton from "@/components/common/GlassButton";
-import PlayArrowRounded from "@mui/icons-material/PlayArrowRounded";
+import { useRouter } from "next/navigation";
 
 function getGreeting(hour: number) {
   if (hour < 12) return "Good Morning!";
@@ -20,6 +19,7 @@ function getGreeting(hour: number) {
 
 export default function HomeClock() {
   const theme = useTheme();
+  const router = useRouter();
   const [time, setTime] = React.useState(new Date());
 
   // update every second
@@ -124,7 +124,7 @@ export default function HomeClock() {
               textTransform: "none",
               fontWeight: 600,
             }}
-            onClick={() => alert("Start verification clicked")}
+            onClick={() => router.push("/employees")}
           >
             Verify
           </GlassButton>
