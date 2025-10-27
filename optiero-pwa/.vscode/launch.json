@@ -2,34 +2,26 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // Runs `npm run dev` under the Node debugger (server-side code)
+      "name": "Next.js: Debug (pnpm)",
       "type": "node",
       "request": "launch",
-      "name": "Next.js: debug server",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": ["run", "dev"],
-      "env": { "NODE_OPTIONS": "--inspect" },
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
+      "env": {
+        "NODE_OPTIONS": "--inspect"          // ✅ correct way to attach debugger
+      },
+      "autoAttachChildProcesses": true
     },
     {
-      // Launches a Chrome instance and attaches to your client-side code
-      "type": "pwa-chrome",
-      "request": "launch",
-      "name": "Next.js: debug client (Chrome)",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}",
-      "sourceMaps": true
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Next.js: full-stack debug",
-      "configurations": [
-        "Next.js: debug server",
-        "Next.js: debug client (Chrome)"
-      ]
+      "name": "Next.js: Attach",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     }
   ]
 }

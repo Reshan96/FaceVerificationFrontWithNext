@@ -54,6 +54,27 @@ export default function VerificationStepCard({
   const [errorMsg, setErrorMsg] = useState("");
   const [currentSession, setCurrentSession] = useState<OpenSession | null>(null);
 
+  // Derive first name from userName for the greeting
+const firstName = userName?.split(" ")[0] ?? userName;
+
+// Title + subtitle per phase
+const titleText =
+  phase === "actions"
+    ? `Hello ${firstName}, Welcome Back!`
+    : phase === "error"
+    ? "Oh! No"
+    : userName;
+
+const subtitleText =
+  phase === "verifying"
+    ? "Verifying face…"
+    : phase === "actions"
+    ? "Select an action"
+    : phase === "success"
+    ? "Attendance recorded"
+    : "Verification failed";
+
+
   // 🔹 Step 1: Verify face and fetch session
   useEffect(() => {
     const verifyFace = async () => {
@@ -193,20 +214,41 @@ export default function VerificationStepCard({
         }}
       >
         {/* Header */}
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 500, color: theme.palette.text.primary }}
-          >
-            {userName}
-          </Typography>
-          <Typography variant="body2" sx={{ color: phaseColor }}>
-            {phase === "verifying" && "Verifying face…"}
-            {phase === "actions" && "Select an action"}
-            {phase === "success" && "Attendance recorded"}
-            {phase === "error" && "Verification failed"}
-          </Typography>
-        </Box>
+       <Box>
+  <Typography
+    variant="h5"
+    sx={{
+      fontWeight: 700,
+      color:
+        phase === "error"
+          ? "rgba(232,65,101,0.95)" // red-ish for error title
+          : theme.palette.text.primary,
+      letterSpacing: 0.2,
+    }}
+  >
+    {titleText}
+  </Typography>
+
+  <Typography
+    variant="body2"
+    sx={{
+      mt: 0.25,
+      // white & slightly bolder for "Select an action" when verified
+      color:
+        phase === "actions"
+          ? "rgba(255,255,255,0.92)"
+          : phase === "error"
+          ? "rgba(232,65,101,0.9)"
+          : phase === "verifying"
+          ? "rgba(178, 132, 222, 0.85)" // purple-ish
+          : "rgba(77, 202, 123, 0.9)",   // green for success
+      fontWeight: 600 ,
+      transition: "color .25s ease",
+    }}
+  >
+    {subtitleText}
+  </Typography>
+</Box>
 
         {/* Captured Photo */}
         <Box

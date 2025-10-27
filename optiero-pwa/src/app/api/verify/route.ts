@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         { status: 502 },
       );
     }
+    
     const face = (await faceRes.json()) as {
       match: boolean;
       verificationScore: number;

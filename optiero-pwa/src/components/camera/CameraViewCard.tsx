@@ -249,8 +249,8 @@ const handleCapture = () => {
         {/* Header */}
         <Box sx={{ mt: 1, mb: 1 }}>
           <Typography
-            variant="h6"
-            sx={{ fontWeight: 500, color: theme.palette.text.primary }}
+            variant="h5"
+            sx={{ fontWeight: 700, color: theme.palette.text.primary }}
           >
             {userName}
           </Typography>
@@ -259,11 +259,12 @@ const handleCapture = () => {
             sx={{
               color:
                 phase === "found"
-                  ? "rgba(72, 118, 255, 0.8)"
+                  ? "rgba(255,255,255,0.92)"
                   : phase === "boot"
-                  ? "rgba(169, 85, 247, 0.8)"
-                  : "rgba(232, 65, 101, 0.8)",
+                  ? "rgba(178, 132, 222, 0.85)"
+                  : "rgba(232,65,101,0.9)",
               transition: "color .25s ease",
+              fontWeight: 600
             }}
           >
             {!cameraReady
