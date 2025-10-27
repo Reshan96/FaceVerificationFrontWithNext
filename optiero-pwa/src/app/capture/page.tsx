@@ -1,13 +1,19 @@
 "use client";
 
 import { Box } from "@mui/material";
-import CameraViewCard from "@/components/camera/CameraViewCard";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelection } from "@/lib/stores/selectionStore";
+import CameraViewCard from "@/components/camera/CameraViewCard";
+import VerificationStepCard from "@/components/camera/VerificationStepCard";
+
+type Phase = "capture" | "verify";
 
 export default function CapturePage() {
   const router = useRouter();
   const selectedEmployee = useSelection((s) => s.selectedEmployee);
+  const [phase, setPhase] = useState<Phase>("capture");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   if (!selectedEmployee) {
     return (
@@ -45,9 +51,8 @@ export default function CapturePage() {
   return (
     <Box
       sx={{
-        height: "100svh", // ensures safe full height across browsers
+        height: "100svh",
         width: "100%",
-        overflow: "hidden", // removes scroll bar / black edge
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -55,19 +60,29 @@ export default function CapturePage() {
           radial-gradient(800px 400px at 50% 0%, rgba(72,118,255,0.25), transparent 80%),
           linear-gradient(180deg, #0b1020 0%, #090d1a 100%)
         `,
-        pt:{xs:8, sm:8},
+        pt: { xs: 8, sm: 8 },
         px: { xs: 1.5, sm: 2 },
-        pb: 0,
       }}
     >
-      <CameraViewCard
-        userName={`${selectedEmployee.firstName} ${selectedEmployee.lastName}`}
-        onCancel={() => router.back()}
-        onCaptured={(blob) => {
-          const url = URL.createObjectURL(blob);
-          router.push(`/verify?photo=${encodeURIComponent(url)}`);
-        }}
-      />
+      {phase === "capture" && (
+        <CameraViewCard
+          userName={`${selectedEmployee.firstName} ${selectedEmployee.lastName}`}
+          onCancel={() => router.back()}
+          onCaptured={(blob) => {
+            const url = URL.createObjectURL(blob);
+            setPhotoUrl(url);
+            setPhase("verify");
+          }}
+        />
+      )}
+
+      {phase === "verify" && photoUrl && (
+        <VerificationStepCard
+          photoUrl={photoUrl}
+          userName={`${selectedEmployee.firstName} ${selectedEmployee.lastName}`}
+          onDone={() => router.replace("/")}
+        />
+      )}
     </Box>
   );
 }
