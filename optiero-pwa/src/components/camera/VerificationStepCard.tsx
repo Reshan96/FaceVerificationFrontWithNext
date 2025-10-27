@@ -14,6 +14,7 @@ import GlassButton from "@/components/common/GlassButton";
 import { useRouter } from "next/navigation";
 import { useSelection } from "@/lib/stores/selectionStore";
 import { SessionStatus, OpenSession, VerifyResponse } from "@/lib/types/types";
+import { buildPayload } from "@/lib/types/payloadBuilder";
 
 type Phase = "verifying" | "actions" | "success" | "error";
 type Action = "in" | "out" | "breakStart" | "breakEnd";
@@ -22,6 +23,14 @@ interface VerificationStepCardProps {
   photoUrl: string;
   userName: string;
   onDone?: () => void;
+}
+
+interface AttendanceAction {
+     EmployeeId: number,
+     ActionTaken: number,
+     OccurredAtUtc: string,
+     SessionId: number,
+    BranchId: number
 }
 
 interface ActionInfo {
@@ -124,49 +133,41 @@ const subtitleText =
   };
 
   // 🔹 Step 3: Handle attendance action
-  const handleAction = async (action: Action) => {
-    setSelectedAction(action);
-    setIsLoading(true);
-    setTimestamp(new Date());
+ const handleAction = async (action: Action) => {
+  setSelectedAction(action);
+  setIsLoading(true);
+  setTimestamp(new Date());
 
-    try {
-      if (!selectedUser) throw new Error("User not found.");
+  try {
+    if (!selectedUser) throw new Error("User not found.");
 
-      const payload = {
-        employeeId: selectedUser.employeeId,
-        BranchId: selectedUser.branchId,
-        actionTaken: ACTION_LABEL[action].code,
-        OccurredAtUtc: new Date().toISOString(),
-        SessionId: currentSession?.sessionId,
-      };
+    const { endpoint, body } = buildPayload(action, {
+      employeeId: selectedUser.employeeId,
+      branchId: selectedUser.branchId,
+      sessionId: currentSession?.sessionId ?? null,
+    });
 
-      let apiUrl = "/api/attendance";
-      if (action === "breakStart" || action === "breakEnd") apiUrl += "/break";
-      if (action === "in" || action === "out") apiUrl += "/check";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
 
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.title || `HTTP ${res.status}`);
-      }
-
-      setPhase("success");
-    } catch (err) {
-      console.error("Attendance action failed:", err);
-      setErrorMsg(
-        err instanceof Error ? err.message : "Attendance action failed."
-      );
-      setPhase("error");
-    } finally {
-      setIsLoading(false);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || `HTTP ${res.status}`);
     }
-  };
+
+    setPhase("success");
+  } catch (err) {
+    console.error("Attendance action failed:", err);
+    setErrorMsg(err instanceof Error ? err.message : "Attendance action failed.");
+    setPhase("error");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // 🔹 UI color mapping by phase
   const phaseColor =

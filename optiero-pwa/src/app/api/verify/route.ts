@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         { status: 502 },
       );
     }
-    
+
     const face = (await faceRes.json()) as {
       match: boolean;
       verificationScore: number;
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     } // if 404 or bad, leave as null
 
     return NextResponse.json<VerifyResponse>({
-      match: true,
+      match: face.match,
       verificationScore: face.verificationScore ?? 0,
       openSession,
     });

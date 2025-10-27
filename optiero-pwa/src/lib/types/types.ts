@@ -49,3 +49,35 @@ export interface CameraCaptureProps {
   onCaptured: (blob: Blob) => void;
   onCancel?: () => void;
 }
+
+
+// Attendance action enum
+export enum AttendanceActionCode {
+  CheckIn = 1,
+  BreakStart = 2,
+  BreakEnd = 3,
+  CheckOut = 4,
+}
+
+type ISO8601 = string;
+
+// common base for both forms
+interface AttendanceBasePayload {
+  EmployeeId: number;
+  ActionTaken: AttendanceActionCode;
+  OccurredAtUtc: ISO8601;
+}
+
+// /Attendance/check form
+export interface CheckPayload extends AttendanceBasePayload {
+  BranchId?: number | null;     // required only for CheckIn
+  SessionId?: number | null;    // required only for CheckOut
+}
+
+// /Attendance/break form
+export interface BreakPayload extends AttendanceBasePayload {
+  SessionId: number;
+}
+
+// unified union
+export type AttendancePayload = CheckPayload | BreakPayload;
