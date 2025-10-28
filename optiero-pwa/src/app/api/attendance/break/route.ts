@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const FACE_API_URL =
-  process.env.FACE_API_URL ?? "http://localhost:5261/api/Attendance";
+const ATTENDANCE_API_URL =
+  process.env.ATTENDANCE_API_URL ?? "http://localhost:5261/api/attendance";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const res = await fetch(`${FACE_API_URL}/break`, {
+    const res = await fetch(`${ATTENDANCE_API_URL}/break`, {
       method: "POST",
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },

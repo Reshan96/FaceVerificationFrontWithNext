@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import { Box} from "@mui/material";
 import HomeClock from "@/components/home/HomeClock"
 
 export default function Home() {

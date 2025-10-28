@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { VerifyResponse, OpenSession } from "@/lib/types/types";
 
 const FACE_VERIFICATION_API_URL =
-  process.env.FACE_VERIFICATION_API_URL ?? "http://localhost:5261/api/FaceVerification";
+  process.env.FACE_VERIFICATION_API_URL ?? "http://localhost:5261/api/face-verification";
 
-const EMPLOYEE_API_URL = process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/Employee";
+const EMPLOYEE_API_URL = process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/employee";
 
 export async function POST(req: NextRequest) {
     console.log("req recived");
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     faceForm.append("employeeId", employeeId);
 
     const faceUrl = `${FACE_VERIFICATION_API_URL}/verify`;
-    const sessionUrl = `${EMPLOYEE_API_URL}/Session?employeeId=${encodeURIComponent(String(employeeId))}`;
+    const sessionUrl = `${EMPLOYEE_API_URL}/session?employeeId=${encodeURIComponent(String(employeeId))}`;
     
     const [faceRes, sessionRes] = await Promise.all([
       fetch(faceUrl, { method:"POST", body: faceForm }),

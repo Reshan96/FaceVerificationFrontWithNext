@@ -13,6 +13,28 @@ export type Employee = {
   designation: string;
 };
 
+export type EmployeeAttendanceStatus = "Open" | "OnBreak" | "Closed" | "OnLeave";
+
+export type EmployeeAttendance = {
+  employeeId: number;
+  employeeCode: string;
+  employeeName: string;
+  branchId: number;
+  attendanceStatus: EmployeeAttendanceStatus;
+  department?: string | null;
+  checkInTime?: string | null;   // ISO string (for design)
+  checkOutTime?: string | null;  // ISO string
+  totalMinutesWorked: number;
+  overTimeMinutes: number;
+  breakMintues: number;
+};
+
+export type BackendAttendance = Omit<EmployeeAttendance, "attendanceStatus"> & {
+  attendanceStatus: number;
+};
+
+
+
 export type OpenSession = {
   sessionId: number;
   sessionStatus: SessionStatus;

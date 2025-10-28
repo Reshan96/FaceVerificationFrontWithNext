@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const EMPLOYEE_API_URL =
-  process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/Employee";
+  process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/employee";
 
 export async function GET(req: NextRequest) {
   try {
