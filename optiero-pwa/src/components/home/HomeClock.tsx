@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import {useEffect, useState} from"react";
 import {
   Box,
   Card,
@@ -10,6 +10,8 @@ import {
 } from "@mui/material";
 import GlassButton from "@/components/common/GlassButton";
 import { useRouter } from "next/navigation";
+import { useBranchStore } from "@/lib/stores/branchStore";
+
 
 function getGreeting(hour: number) {
   if (hour < 12) return "Good Morning!";
@@ -17,13 +19,16 @@ function getGreeting(hour: number) {
   return "Good Evening!";
 }
 
+
 export default function HomeClock() {
+  const {setBranchId} = useBranchStore();
   const theme = useTheme();
   const router = useRouter();
-  const [time, setTime] = React.useState(new Date());
+  const [time, setTime] = useState(new Date());
+  const branchId = 1;
 
   // update every second
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -124,7 +129,10 @@ export default function HomeClock() {
               textTransform: "none",
               fontWeight: 600,
             }}
-            onClick={() => router.push("/employees")}
+            onClick={() =>{
+              setBranchId(branchId);
+              router.push("/employees");
+            }}
           >
             Verify
           </GlassButton>

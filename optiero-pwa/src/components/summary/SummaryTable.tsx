@@ -6,6 +6,7 @@ import {
   TableCell,TableContainer,TableHead,TableRow,Paper,TablePagination,Stack,Divider,
   IconButton,
 } from "@mui/material";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -170,23 +171,12 @@ export default function SummaryTable() {
   if (error) {
     return (
         <>
-      <Card
-        sx={{
-          p: 4,
-          borderRadius: 4,
-          textAlign: "center",
-          backdropFilter: "blur(20px) saturate(180%)",
-          backgroundColor:
-            theme.palette.mode === "light"
-              ? "rgba(255,255,255,0.55)"
-              : "rgba(17,25,40,0.6)",
-        }}
-      >
-        <Typography variant="h6" color="error">
+        <Stack spacing={2} alignItems="center">
+            <ErrorOutlineIcon sx={{ fontSize: 60, color: "#ff7676" }} />
+        <Typography color="white" sx={{ mt: 8, opacity: 0.8 }}>
           {error}
         </Typography>
-      </Card>
-
+</Stack>
       <GlassSnackbar
           open={snackbarOpen}
           message={error}
