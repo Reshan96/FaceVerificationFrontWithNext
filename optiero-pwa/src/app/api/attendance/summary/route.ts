@@ -1,4 +1,5 @@
 // src/app/api/attendance/summary/route.ts
+import { normalizeApiError, normalizeClientError } from "@/lib/errorHandler/errorHandler";
 import { NextRequest, NextResponse } from "next/server";
 
 const ATTENDANCE_SUMMARY_API_URL =
@@ -23,19 +24,23 @@ export async function GET(req: NextRequest) {
     );
 
     if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(`API ${res.status}: ${msg}`);
+      const normalized = await normalizeApiError(res);
+      console.error("API Error:", normalized);
+      return NextResponse.json(
+        { error: normalized.message, title: normalized.title },
+        { status: normalized.status }
+      );
     }
 
     const data = await res.json();
     return NextResponse.json(data);
+
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unknown error occurred";
-    console.error("Error fetching attendance summary:", message);
+    const normalized = normalizeClientError(err);
+    console.error("Client Error:", normalized);
     return NextResponse.json(
-      { error: message },
-      { status: 500 }
+      { error: normalized.message, title: normalized.title },
+      { status: normalized.status }
     );
   }
 }

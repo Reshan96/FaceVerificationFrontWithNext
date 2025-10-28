@@ -21,6 +21,7 @@ import type {
 import type { ChipProps } from "@mui/material";
 import GlassLoader from "../common/GlassLoader";
 import GlassSnackbar from "../common/GlassSnackbar";
+import { normalizeApiError, normalizeClientError } from "@/lib/errorHandler/errorHandler";
 
 const statusColor = (s: EmployeeAttendanceStatus): ChipProps["color"] => {
   switch (s) {
@@ -87,30 +88,38 @@ export default function SummaryTable() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [rows, setRows] = useState<EmployeeAttendance[]>([]);
-  const [loading, setLoading] = useState(false);
+  
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // ---------- Fetch Attendance Summary ----------
   useEffect(() => {
+
     const fetchData = async (): Promise<void> => {
+
       setLoading(true);
       setError(null);
 
       try {
+
         const formattedDate = date.format("YYYY-MM-DD");
+        
         const res = await fetch(
           `/api/attendance/summary?branchId=1&dateTime=${formattedDate}`,
           { cache: "no-store" }
         );
 
         if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || `HTTP ${res.status}`);
+            const errJson = await res.json().catch(() => null);
+            const message =
+                errJson?.error ||
+                errJson?.message ||
+                `HTTP ${res.status} - ${res.statusText || "Request failed"}`;
+            throw new Error(message);
         }
 
         const json = (await res.json()) as BackendAttendance[];
-
         const data: EmployeeAttendance[] = json.map((item) => ({
         ...item,
         attendanceStatus: mapAttendanceStatus(item.attendanceStatus),
@@ -119,10 +128,11 @@ export default function SummaryTable() {
         setRows(data);
 
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error occurred";
-        console.error("Fetch error:", message);
-        setError(message);
+
+        const normalized = normalizeClientError(err);
+        console.error("Fetch error:", normalized);
+
+        setError(normalized.message);
         setSnackbarOpen(true);
         
       } finally {
@@ -131,6 +141,7 @@ export default function SummaryTable() {
     };
 
     fetchData();
+
   }, [date]);
 
   // ---------- Pagination ----------
@@ -258,6 +269,7 @@ export default function SummaryTable() {
             <DatePicker
               label="Date"
               value={date}
+              disableFuture
               onChange={(d) => {
                 if (d) setDate(d);
                 setPage(0);
@@ -338,7 +350,7 @@ export default function SummaryTable() {
                   {pagedRows.map((r) => (
                     <TableRow
                       hover
-                      key={r.employeeId}
+                      key={`${r.employeeId}-${r.checkInTime ?? r.checkOutTime ?? Math.random()}`}
                       sx={{
                         "&:last-child td, &:last-child th": { border: 0 },
                         transition: "background 0.2s ease",
