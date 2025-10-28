@@ -7,6 +7,7 @@ import {
   IconButton,
 } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import AddRounded from "@mui/icons-material/AddRounded";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -23,6 +24,9 @@ import type { ChipProps } from "@mui/material";
 import GlassLoader from "../common/GlassLoader";
 import GlassSnackbar from "../common/GlassSnackbar";
 import { normalizeApiError, normalizeClientError } from "@/lib/errorHandler/errorHandler";
+import { useBranchStore } from "@/lib/stores/branchStore";
+import AdminSessionForm from "./ManualAttendanceForm";
+
 
 const statusColor = (s: EmployeeAttendanceStatus): ChipProps["color"] => {
   switch (s) {
@@ -87,12 +91,20 @@ export default function SummaryTable() {
   const [date, setDate] = useState<Dayjs>(dayjs());
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { branchId } = useBranchStore();
+
 
   const [rows, setRows] = useState<EmployeeAttendance[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const forceRefresh = () => {
+    // triggers your useEffect by re-setting the same date
+    setDate((prev) => prev.clone());
+  };
 
   // ---------- Fetch Attendance Summary ----------
   useEffect(() => {
@@ -107,7 +119,7 @@ export default function SummaryTable() {
         const formattedDate = date.format("YYYY-MM-DD");
         
         const res = await fetch(
-          `/api/attendance/summary?branchId=1&dateTime=${formattedDate}`,
+          `/api/attendance/summary?branchId=${branchId}&dateTime=${formattedDate}`,
           { cache: "no-store" }
         );
 
@@ -194,8 +206,8 @@ export default function SummaryTable() {
     <Card
       elevation={0}
       sx={{
-        width: "100%",
-        maxWidth: 1200,
+        width: "94%",
+        maxWidth: 1400,
         borderRadius: 4,
         backdropFilter: "blur(20px) saturate(180%)",
         backgroundColor:
@@ -227,33 +239,55 @@ export default function SummaryTable() {
               Branch: 1 &middot; Select a date to view daily summary
             </Typography>
           </Box>
-<Stack direction="row" alignItems="center" spacing={1.5}>
-  {/* Refresh Button */}
-  <IconButton
-    onClick={() => {
-      // Re-trigger the same fetch manually
-      setDate((prev) => prev.clone()); // forces re-run of useEffect
-    }}
-    color="inherit"
-    sx={{
-      backdropFilter: "blur(12px) saturate(180%)",
-      backgroundColor:
-        theme.palette.mode === "light"
-          ? "rgba(255,255,255,0.4)"
-          : "rgba(255,255,255,0.1)",
-      border: "1px solid rgba(255,255,255,0.25)",
-      transition: "all 0.2s ease",
-      "&:hover": {
-        backgroundColor:
-          theme.palette.mode === "light"
-            ? "rgba(255,255,255,0.7)"
-            : "rgba(255,255,255,0.25)",
-        transform: "rotate(90deg)",
-      },
-    }}
-  >
-    <RefreshIcon />
-  </IconButton>
+
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+
+        <IconButton
+        onClick={() => setAddOpen(true)}
+        color="inherit"
+        sx={(theme) => ({
+          backdropFilter: "blur(12px) saturate(180%)",
+          backgroundColor:
+            theme.palette.mode === "light"
+              ? "rgba(255,255,255,0.4)"
+              : "rgba(255,255,255,0.1)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          transition: "all 0.15s ease",
+          "&:hover": {
+            transform: "scale(1.05)",
+            backgroundColor:
+              theme.palette.mode === "light"
+                ? "rgba(255,255,255,0.7)"
+                : "rgba(255,255,255,0.25)",
+          },
+        })}
+      >
+        <AddRounded />
+      </IconButton>
+
+        {/* Refresh Button */}
+        <IconButton
+            onClick={forceRefresh}
+            color="inherit"
+            sx={{
+            backdropFilter: "blur(12px) saturate(180%)",
+            backgroundColor:
+                theme.palette.mode === "light"
+                ? "rgba(255,255,255,0.4)"
+                : "rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.25)",
+            transition: "all 0.2s ease",
+            "&:hover": {
+                backgroundColor:
+                theme.palette.mode === "light"
+                    ? "rgba(255,255,255,0.7)"
+                    : "rgba(255,255,255,0.25)",
+                transform: "rotate(90deg)",
+            },
+            }}
+        >
+            <RefreshIcon />
+        </IconButton>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
@@ -411,6 +445,12 @@ export default function SummaryTable() {
         )}
       </CardContent>
     </Card>
+
+    <AdminSessionForm
+      open={addOpen}
+      onClose={() => setAddOpen(false)}
+      onCreated={forceRefresh}
+    />
 
     <GlassSnackbar
         open={snackbarOpen}

@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation";
 import { useSelection } from "@/lib/stores/selectionStore";
 import { SessionStatus, OpenSession, VerifyResponse } from "@/lib/types/types";
 import { buildPayload } from "@/lib/types/payloadBuilder";
+import { normalizeClientError } from "@/lib/errorHandler/errorHandler";
+import GlassSnackbar from "../common/GlassSnackbar";
 
 type Phase = "verifying" | "actions" | "success" | "error";
 type Action = "in" | "out" | "breakStart" | "breakEnd";
@@ -23,14 +25,6 @@ interface VerificationStepCardProps {
   photoUrl: string;
   userName: string;
   onDone?: () => void;
-}
-
-interface AttendanceAction {
-     EmployeeId: number,
-     ActionTaken: number,
-     OccurredAtUtc: string,
-     SessionId: number,
-    BranchId: number
 }
 
 interface ActionInfo {
@@ -61,12 +55,11 @@ export default function VerificationStepCard({
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [timestamp, setTimestamp] = useState<Date | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [currentSession, setCurrentSession] = useState<OpenSession | null>(null);
 
-  // Derive first name from userName for the greeting
 const firstName = userName?.split(" ")[0] ?? userName;
 
-// Title + subtitle per phase
 const titleText =
   phase === "actions"
     ? `Hello ${firstName}, Welcome Back!`
@@ -81,10 +74,11 @@ const subtitleText =
     ? "Select an action"
     : phase === "success"
     ? "Attendance recorded"
+    : errorMsg?.toLowerCase().includes("unexpected") ||
+      errorMsg?.toLowerCase().includes("http")
+    ? "Unexpected error occurred"
     : "Verification failed";
 
-
-  // 🔹 Step 1: Verify face and fetch session
   useEffect(() => {
     const verifyFace = async () => {
       try {
@@ -100,26 +94,35 @@ const subtitleText =
         form.append("employeeId", selectedUser.employeeId.toString());
 
         const res = await fetch("/api/verify", { method: "POST", body: form });
+
+        if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const message =
+          errJson?.error ||
+          errJson?.message ||
+          `HTTP ${res.status} - ${res.statusText || "Request failed"}`;
+        throw new Error(message);
+      }
+
         const data = (await res.json()) as VerifyResponse;
 
-        if (!res.ok || !data.match)
-          throw new Error("Face not recognized or verification failed.");
+              if (!data.match) throw new Error("Face not recognized. Please try again.");
 
         setCurrentSession(data.openSession ?? null);
         setPhase("actions");
+
       } catch (err) {
-        console.error("Verification failed:", err);
-        setErrorMsg(
-          err instanceof Error ? err.message : "Verification failed. Try again."
-        );
-        setPhase("error");
-      }
+      const normalized = normalizeClientError(err);
+      console.error("Verification failed:", normalized);
+      setErrorMsg(normalized.message);
+      setSnackbarOpen(true);
+      setPhase("error");
+    }
     };
 
     verifyFace();
   }, [photoUrl, selectedUser, clearUser, router]);
 
-  // 🔹 Step 2: Determine allowed actions
   const getAllowedActions = (session: OpenSession | null): Action[] => {
     if (!session) return ["in"];
     switch (session.sessionStatus) {
@@ -132,11 +135,13 @@ const subtitleText =
     }
   };
 
-  // 🔹 Step 3: Handle attendance action
  const handleAction = async (action: Action) => {
   setSelectedAction(action);
   setIsLoading(true);
   setTimestamp(new Date());
+
+  setErrorMsg("");
+  setSnackbarOpen(false);
 
   try {
     if (!selectedUser) throw new Error("User not found.");
@@ -155,21 +160,27 @@ const subtitleText =
     });
 
     if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || `HTTP ${res.status}`);
+      const errJson = await res.json().catch(() => null);
+      const message =
+        errJson?.error ||
+        errJson?.message ||
+        `HTTP ${res.status} - ${res.statusText || "Request failed"}`;
+      throw new Error(message);
     }
 
     setPhase("success");
   } catch (err) {
-    console.error("Attendance action failed:", err);
-    setErrorMsg(err instanceof Error ? err.message : "Attendance action failed.");
+    const normalized = normalizeClientError(err);
+    console.error("Attendance action failed:", normalized);
+
+    setErrorMsg(normalized.message);
+    setSnackbarOpen(true);
     setPhase("error");
   } finally {
     setIsLoading(false);
   }
 };
 
-  // 🔹 UI color mapping by phase
   const phaseColor =
     phase === "verifying"
       ? "rgba(168,85,247,0.8)" // purple
@@ -179,15 +190,15 @@ const subtitleText =
       ? "rgba(34,197,94,0.9)" // green
       : "rgba(232,65,101,0.9)"; // red
 
-  // 🔹 UI
   return (
+    <>
     <Card
       elevation={0}
       sx={{
-        width: "100%",
-        maxWidth: 720,
-        display: "flex",
-        flexDirection: "column",
+          width: "100%",
+          maxWidth: 720,
+          display: "flex",
+          flexDirection: "column",
         alignItems: "center",
         borderRadius: 6,
         px: { xs: 2, sm: 3 },
@@ -201,17 +212,17 @@ const subtitleText =
         border: "1px solid rgba(255,255,255,0.26)",
         boxShadow:
           theme.palette.mode === "light"
-            ? "0 6px 28px rgba(0,0,0,0.08)"
-            : "0 6px 28px rgba(0,0,0,0.65)",
-      }}
+          ? "0 6px 28px rgba(0,0,0,0.08)"
+          : "0 6px 28px rgba(0,0,0,0.65)",
+        }}
     >
       <CardContent
         sx={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
         }}
       >
         {/* Header */}
@@ -219,34 +230,34 @@ const subtitleText =
   <Typography
     variant="h5"
     sx={{
-      fontWeight: 700,
-      color:
+        fontWeight: 700,
+        color:
         phase === "error"
-          ? "rgba(232,65,101,0.95)" // red-ish for error title
-          : theme.palette.text.primary,
-      letterSpacing: 0.2,
+        ? "rgba(232,65,101,0.95)" // red-ish for error title
+        : theme.palette.text.primary,
+        letterSpacing: 0.2,
     }}
-  >
+    >
     {titleText}
   </Typography>
 
   <Typography
     variant="body2"
     sx={{
-      mt: 0.25,
-      // white & slightly bolder for "Select an action" when verified
-      color:
+        mt: 0.25,
+        
+        color:
         phase === "actions"
-          ? "rgba(255,255,255,0.92)"
-          : phase === "error"
-          ? "rgba(232,65,101,0.9)"
-          : phase === "verifying"
-          ? "rgba(178, 132, 222, 0.85)" // purple-ish
-          : "rgba(77, 202, 123, 0.9)",   // green for success
-      fontWeight: 600 ,
-      transition: "color .25s ease",
+        ? "rgba(255,255,255,0.92)"
+        : phase === "error"
+        ? "rgba(232,65,101,0.9)"
+        : phase === "verifying"
+        ? "rgba(178, 132, 222, 0.85)" 
+        : "rgba(77, 202, 123, 0.9)", 
+        fontWeight: 600 ,
+        transition: "color .25s ease",
     }}
-  >
+    >
     {subtitleText}
   </Typography>
 </Box>
@@ -254,9 +265,9 @@ const subtitleText =
         {/* Captured Photo */}
         <Box
           sx={{
-            position: "relative",
-            borderRadius: "50%",
-            overflow: "hidden",
+              position: "relative",
+              borderRadius: "50%",
+              overflow: "hidden",
             width: { xs: "min(80vw, 60vh)", sm: "min(60vw, 50vh)" },
             aspectRatio: "1 / 1",
             boxShadow: `0 0 36px ${phaseColor}`,
@@ -270,16 +281,16 @@ const subtitleText =
           />
 
           {phase === "verifying" && (
-            <Box
+              <Box
               sx={{
-                position: "absolute",
-                inset: 0,
-                backdropFilter: "blur(4px) brightness(0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+                  position: "absolute",
+                  inset: 0,
+                  backdropFilter: "blur(4px) brightness(0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                >
               <CircularProgress size={48} thickness={4} />
             </Box>
           )}
@@ -288,21 +299,21 @@ const subtitleText =
         {/* Action / Result Buttons */}
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: 1.5,
-            textAlign: "center",
-          }}
-        >
+              display: "flex",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
+              textAlign: "center",
+            }}
+            >
           {phase === "actions" &&
             getAllowedActions(currentSession).map((a) => (
-              <GlassButton
+                <GlassButton
                 key={a}
                 onClick={() => handleAction(a)}
                 disabled={isLoading}
                 variant={selectedAction === a ? "contained" : "outlined"}
-              >
+                >
                 {isLoading && selectedAction === a
                   ? "Processing…"
                   : ACTION_LABEL[a].actionLabel}
@@ -310,7 +321,7 @@ const subtitleText =
             ))}
 
           {phase === "success" && (
-            <Box>
+              <Box>
               <Typography
                 variant="h6"
                 sx={{ color: "rgba(34,197,94,0.9)", mb: 1 }}
@@ -319,7 +330,7 @@ const subtitleText =
                   ACTION_LABEL[selectedAction].responseLabel}
               </Typography>
               {timestamp && (
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
                   {timestamp.toLocaleString()}
                 </Typography>
               )}
@@ -330,7 +341,7 @@ const subtitleText =
           )}
 
           {phase === "error" && (
-            <Box sx={{ textAlign: "center" }}>
+              <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
                 {errorMsg || "Verification failed. Please try again."}
               </Typography>
@@ -340,5 +351,12 @@ const subtitleText =
         </Box>
       </CardContent>
     </Card>
+
+    <GlassSnackbar
+        open={snackbarOpen}
+        onClose={() => setSnackbarOpen(false)}
+        message={errorMsg || "Verification failed. Please try again."}
+        />
+    </>
   );
 }

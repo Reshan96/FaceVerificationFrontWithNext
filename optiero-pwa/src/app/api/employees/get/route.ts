@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
     );
 
     if (!res.ok) {
-      // normalize backend error (400/500)
       const normalized = await normalizeApiError(res);
       console.error("API Error:", normalized);
       return NextResponse.json(
@@ -34,8 +33,8 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json();
     return NextResponse.json(data);
+
   } catch (err) {
-    // normalize client / network errors (e.g., backend down)
     const normalized = normalizeClientError(err);
     console.error("Client Error:", normalized);
     return NextResponse.json(

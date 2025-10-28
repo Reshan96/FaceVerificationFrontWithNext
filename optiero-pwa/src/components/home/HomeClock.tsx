@@ -30,6 +30,7 @@ export default function HomeClock() {
   // update every second
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
+    setBranchId(1); // get the branchId from jwt and save it
     return () => clearInterval(timer);
   }, []);
 
@@ -130,7 +131,7 @@ export default function HomeClock() {
               fontWeight: 600,
             }}
             onClick={() =>{
-              setBranchId(branchId);
+              setBranchId(branchId); //for the safety
               router.push("/employees");
             }}
           >

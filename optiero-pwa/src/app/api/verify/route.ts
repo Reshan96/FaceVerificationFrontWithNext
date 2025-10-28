@@ -1,65 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
 import { VerifyResponse, OpenSession } from "@/lib/types/types";
+import { normalizeApiError, normalizeClientError } from "@/lib/errorHandler/errorHandler";
 
 const FACE_VERIFICATION_API_URL =
   process.env.FACE_VERIFICATION_API_URL ?? "http://localhost:5261/api/face-verification";
 
-const EMPLOYEE_API_URL = process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/employee";
+const EMPLOYEE_API_URL =
+  process.env.EMPLOYEE_API_URL ?? "http://localhost:5261/api/employee";
 
 export async function POST(req: NextRequest) {
-    console.log("req recived");
+  console.log("📸 /api/verify request received");
+
   try {
     const formData = await req.formData();
     const image = formData.get("image") as Blob | null;
     const employeeId = formData.get("employeeId") as string | null;
 
-    if (!image || !employeeId)
+    if (!image || !employeeId) {
       return NextResponse.json(
-        { error: "Missing image or employee Id" },
-        { status: 400 },
+        { error: "Missing image or employeeId", title: "Bad Request" },
+        { status: 400 }
       );
+    }
 
     const faceForm = new FormData();
     faceForm.append("image", image);
     faceForm.append("employeeId", employeeId);
 
     const faceUrl = `${FACE_VERIFICATION_API_URL}/verify`;
-    const sessionUrl = `${EMPLOYEE_API_URL}/session?employeeId=${encodeURIComponent(String(employeeId))}`;
-    
+    const sessionUrl = `${EMPLOYEE_API_URL}/session?employeeId=${encodeURIComponent(employeeId)}`;
+
     const [faceRes, sessionRes] = await Promise.all([
-      fetch(faceUrl, { method:"POST", body: faceForm }),
+      fetch(faceUrl, { method: "POST", body: faceForm }),
       fetch(sessionUrl, { cache: "no-store" }),
     ]);
 
     // Handle face API errors
     if (!faceRes.ok) {
-      const msg = await faceRes.text();
+      const normalized = await normalizeApiError(faceRes);
+      console.error("Face API Error:", normalized);
       return NextResponse.json(
-        { error: `Face verification failed: ${msg}` },
-        { status: 502 },
+        { error: normalized.message, title: normalized.title },
+        { status: normalized.status }
       );
     }
 
-    const face = (await faceRes.json()) as {
-      match: boolean;
-      verificationScore: number;
-    };
+    // arse face verification response
+    const face = (await faceRes.json().catch(() => null)) ?? {};
+    const match = Boolean(face.match);
+    const verificationScore = Number(face.verificationScore ?? 0);
 
+    // Fetch open session if face matched
     let openSession: OpenSession = null;
-    if (face.match && sessionRes.ok) {
-      // Expecting: { sessionId: number, sessionStatus: 1|2|3 } or 404
+    if (match && sessionRes.ok) {
       const js = await sessionRes.json().catch(() => null);
       openSession = js ?? null;
-    } // if 404 or bad, leave as null
+    } else if (!sessionRes.ok && sessionRes.status !== 404) {
+      const normalized = await normalizeApiError(sessionRes);
+      console.error("Session API Error:", normalized);
+      return NextResponse.json(
+        { error: normalized.message, title: normalized.title },
+        { status: normalized.status }
+      );
+    }
 
     return NextResponse.json<VerifyResponse>({
-      match: face.match,
-      verificationScore: face.verificationScore ?? 0,
+      match,
+      verificationScore,
       openSession,
     });
-
   } catch (err) {
-    console.error("API verify error:", err);
-    return NextResponse.json({error: "Internal server error",},{status: 500,},);
+    const normalized = normalizeClientError(err);
+    console.error("Client Error:", normalized);
+    return NextResponse.json(
+      { error: normalized.message, title: normalized.title },
+      { status: normalized.status }
+    );
   }
 }

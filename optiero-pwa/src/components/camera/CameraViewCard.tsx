@@ -5,6 +5,7 @@ import { Box, Card, CardContent, Typography, useTheme } from "@mui/material";
 import Image from "next/image";
 import GlassButton from "@/components/common/GlassButton";
 import { useFaceDetection } from "@/lib/customHooks/useFaceDetection";
+import GlassSnackbar from "../common/GlassSnackbar";
 
 interface CameraViewCardProps {
   userName: string;
@@ -32,6 +33,8 @@ export default function CameraViewCard({
   const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
   const [snapshotBlob, setSnapshotBlob] = useState<Blob | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // 🚀 Start camera
  const startCamera = useCallback(async () => {
@@ -65,6 +68,8 @@ export default function CameraViewCard({
     setCameraReady(true);
   } catch (err) {
     console.error("Camera start failed:", err);
+    setError("Unable to start the camera. Please try again.");
+    setSnackbarOpen(true);
   }
 }, []);
 
@@ -207,6 +212,7 @@ const handleCapture = () => {
   const shouldPulse = phase !== "found";
 
   return (
+    <>
     <Card
       elevation={0}
       sx={{
@@ -224,17 +230,17 @@ const handleCapture = () => {
         textAlign: "center",
         backdropFilter: "blur(20px) saturate(180%)",
         backgroundColor:
-          theme.palette.mode === "light"
+        theme.palette.mode === "light"
             ? "rgba(255,255,255,0.55)"
             : "rgba(17,25,40,0.6)",
-        border: "1px solid rgba(255,255,255,0.26)",
+            border: "1px solid rgba(255,255,255,0.26)",
         boxShadow:
-          theme.palette.mode === "light"
+        theme.palette.mode === "light"
             ? "0 6px 28px rgba(0,0,0,0.08)"
             : "0 6px 28px rgba(0,0,0,0.65)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-      }}
-    >
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          }}
+          >
       <CardContent
         sx={{
           width: "100%",
@@ -245,28 +251,28 @@ const handleCapture = () => {
           justifyContent: "space-evenly",
           p: 0,
         }}
-      >
+        >
         {/* Header */}
         <Box sx={{ mt: 1, mb: 1 }}>
           <Typography
             variant="h5"
             sx={{ fontWeight: 700, color: theme.palette.text.primary }}
-          >
+            >
             {userName}
           </Typography>
           <Typography
             variant="body2"
             sx={{
               color:
-                phase === "found"
-                  ? "rgba(255,255,255,0.92)"
-                  : phase === "boot"
-                  ? "rgba(178, 132, 222, 0.85)"
-                  : "rgba(232,65,101,0.9)",
+              phase === "found"
+              ? "rgba(255,255,255,0.92)"
+              : phase === "boot"
+              ? "rgba(178, 132, 222, 0.85)"
+              : "rgba(232,65,101,0.9)",
               transition: "color .25s ease",
               fontWeight: 600
             }}
-          >
+            >
             {!cameraReady
               ? "Starting camera…"
               : hasFace
@@ -293,9 +299,9 @@ const handleCapture = () => {
             alignItems: "center",
             my: { xs: 1, sm: 1.5 },
             background:
-              theme.palette.mode === "dark"
-                ? "radial-gradient(circle at 50% 50%, rgba(60,90,255,0.14), rgba(0,0,0,0.35))"
-                : "radial-gradient(circle at 50% 50%, rgba(120,160,255,0.22), rgba(255,255,255,0.78))",
+            theme.palette.mode === "dark"
+            ? "radial-gradient(circle at 50% 50%, rgba(60,90,255,0.14), rgba(0,0,0,0.35))"
+            : "radial-gradient(circle at 50% 50%, rgba(120,160,255,0.22), rgba(255,255,255,0.78))",
             boxShadow: `0 0 36px ${glow.glow}`,
             transition: "box-shadow .35s ease, background .35s ease",
             "&::before": {
@@ -312,7 +318,7 @@ const handleCapture = () => {
               "50%": { boxShadow: `0 0 40px ${glow.glow}` },
             },
           }}
-        >
+          >
           {!snapshotUrl ? (
             <video
               ref={videoRef}
@@ -336,7 +342,7 @@ const handleCapture = () => {
             pt: { xs: 10, sm: 3 },
             mb: { xs: 1.5, sm: 2 },
           }}
-        >
+          >
           {!snapshotUrl ? (
             <>
               <GlassButton onClick={handleCancel}>Cancel</GlassButton>
@@ -344,7 +350,7 @@ const handleCapture = () => {
                 onClick={handleCapture}
                 disabled={!cameraReady || !hasFace}
                 variant="contained"
-              >
+                >
                 {cameraReady ? (hasFace ? "Capture" : "Align Face") : "Loading…"}
               </GlassButton>
             </>
@@ -359,5 +365,13 @@ const handleCapture = () => {
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </CardContent>
     </Card>
+
+    <GlassSnackbar
+      open={snackbarOpen}
+      onClose={() => setSnackbarOpen(false)}
+      showHomeButton={true}
+      message={error || ""}
+    />
+  </>
   );
 }

@@ -34,6 +34,7 @@ export default function GlassSnackbar({
 
   return (
     <Snackbar
+      sx={{ zIndex: 2000 }}
       open={open}
       onClose={onClose}
       anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
