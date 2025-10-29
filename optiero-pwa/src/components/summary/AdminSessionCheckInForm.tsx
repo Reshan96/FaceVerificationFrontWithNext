@@ -33,10 +33,8 @@ type Props = {
   onCreated?: () => void; // call after successful submit to refresh table
 };
 
-export default function AdminSessionForm({ open, onClose, onCreated }: Props) {
+export default function AdminSessionCheckInForm({ open, onClose, onCreated }: Props) {
   const { branchId } = useBranchStore();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(false);
 
   const [state, setState] = useState<FormState>({
     employee: null,
@@ -45,20 +43,41 @@ export default function AdminSessionForm({ open, onClose, onCreated }: Props) {
     remarks: "",
   });
 
-  const [submitting, setSubmitting] = useState(false);
-  const [snack, setSnack] = useState<{ open: boolean; msg: string; sev: "error"|"success" }>({
-    open: false, msg: "", sev: "success"
-  });
-
+const [submitting, setSubmitting] = useState(false);
 const [data, setData] = useState<Employee[]>([]);
 const [loading, setLoading] = useState(false);
-const [fetchError, setFetchError] = useState<string | null>(null);
-const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+const [toast, setToast] = useState<{ open: boolean; message: string; severity: "error" | "success" }>({
+  open: false,
+  message: "",
+  severity: "success",
+});
+
+const resetToast = () => {
+    setToast({open: false, message:"", severity: "success"});
+}
+
+const resetForm = () => {
+
+  setState({
+    employee: null,
+    action: "SignIn",
+    time: dayjs(),
+    remarks: "",
+  });
+
+  setToast((t) => ({ ...t, open: false }));
+};
+
+const handleClose = () => {
+  resetForm();
+  onClose();
+};
 
 // --- fetch employees (your pattern)
 const fetchEmployees = async (id: number): Promise<void> => {
   setLoading(true);
-  setFetchError(null);
+  resetToast();
 
   try {
     const res = await fetch(`/api/employees/get?branchId=${id}`, {
@@ -81,8 +100,7 @@ const fetchEmployees = async (id: number): Promise<void> => {
 
     const normalized = normalizeClientError(err);
     console.error("Fetch error:", normalized);
-    setFetchError(normalized.message);
-    setSnackbarOpen(true);
+    setToast({ open: true, message: normalized.message, severity: "error" });
     setData([]);
     
   } finally {
@@ -98,11 +116,14 @@ useEffect(() => {
 
 
 const handleSubmit = async () => {
+
+  resetToast();
+
   if (!state.employee || !state.remarks.trim()) {
-    setSnack({
+    setToast({
       open: true,
-      msg: "Please select an employee and add remarks before saving.",
-      sev: "error",
+      message: "Please select an employee and add remarks before saving.",
+      severity: "error",
     });
     return;
   }
@@ -134,27 +155,18 @@ const handleSubmit = async () => {
     }
 
     // success
-    setSnack({
-      open: true,
-      msg: "Session created successfully 🎉",
-      sev: "success",
-    });
+    setToast({ open: true, message: "Session created successfully 🎉", severity: "success" });
 
     onCreated?.(); // refresh table
-    onClose();
-    setState({
-      employee: null,
-      action: "SignIn",
-      time: dayjs(),
-      remarks: "",
-    });
+    handleClose();
+
   } catch (err: unknown) {
     const normalized = normalizeClientError(err);
     console.error("Submit error:", normalized);
-    setSnack({
+    setToast({
       open: true,
-      msg: normalized.message || "Failed to create session.",
-      sev: "error",
+      message: normalized.message || "Failed to create session.",
+      severity: "error",
     });
   } finally {
     setSubmitting(false);
@@ -163,7 +175,7 @@ const handleSubmit = async () => {
 
   return (
     <>
-      <GlassModal open={open} onClose={onClose}>
+      <GlassModal open={open} onClose={handleClose}>
         <Stack spacing={2.5}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <AddRounded />
@@ -171,10 +183,6 @@ const handleSubmit = async () => {
               Manual Sign-In
             </Typography>
           </Stack>
-
-          {loadingEmployees ? (
-            <GlassLoader message="Loading employees..." height={160} />
-          ) : (
             <>
               {/* Employee */}
               <Autocomplete
@@ -263,7 +271,7 @@ const handleSubmit = async () => {
               />
 
               <Stack direction="row" spacing={1.5} justifyContent="flex-end" sx={{ pt: 0.5 }}>
-                <Button onClick={onClose} variant="outlined" disabled={submitting}>
+                <Button onClick={handleClose} variant="outlined" disabled={submitting}>
                   Cancel
                 </Button>
                 <Button
@@ -276,17 +284,17 @@ const handleSubmit = async () => {
                 </Button>
               </Stack>
             </>
-          )}
+          
         </Stack>
       </GlassModal>
 
       <GlassSnackbar
-        open={snack.open}
-        message={snack.msg}
-        severity={snack.sev}
-        autoHideDuration={snack.sev === "success" ? 3000 : 5000}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-      />
+        open={toast.open}
+        message={toast.message}
+        severity={toast.severity}
+        autoHideDuration={toast.severity === "success" ? 3000 : 5000}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        />
     </>
   );
 }

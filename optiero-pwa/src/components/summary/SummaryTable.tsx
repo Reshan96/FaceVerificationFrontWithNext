@@ -25,7 +25,10 @@ import GlassLoader from "../common/GlassLoader";
 import GlassSnackbar from "../common/GlassSnackbar";
 import { normalizeApiError, normalizeClientError } from "@/lib/errorHandler/errorHandler";
 import { useBranchStore } from "@/lib/stores/branchStore";
-import AdminSessionForm from "./ManualAttendanceForm";
+import AdminSessionCheckInForm from "./AdminSessionCheckInForm";
+import AdminSessionUpdateForm from "./AdminSessionUpdateForm";
+
+
 
 
 const statusColor = (s: EmployeeAttendanceStatus): ChipProps["color"] => {
@@ -99,7 +102,9 @@ export default function SummaryTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [addSessionOpen, setAddSessionOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<EmployeeAttendance | null>(null);
+  const [updateSessionOpen, setUpdateSessionOpen] = useState(false);
 
   const forceRefresh = () => {
     // triggers your useEffect by re-setting the same date
@@ -243,7 +248,7 @@ export default function SummaryTable() {
         <Stack direction="row" alignItems="center" spacing={1.5}>
 
         <IconButton
-        onClick={() => setAddOpen(true)}
+        onClick={() => setAddSessionOpen(true)}
         color="inherit"
         sx={(theme) => ({
           backdropFilter: "blur(12px) saturate(180%)",
@@ -373,19 +378,29 @@ export default function SummaryTable() {
                 <TableBody>
                   {pagedRows.map((r) => (
                     <TableRow
-                      hover
-                      key={`${r.employeeId}-${r.checkInTime ?? r.checkOutTime ?? Math.random()}`}
-                      sx={{
-                        "&:last-child td, &:last-child th": { border: 0 },
-                        transition: "background 0.2s ease",
-                        "&:hover": {
-                          backgroundColor:
-                            theme.palette.mode === "light"
-                              ? "rgba(255,255,255,0.3)"
-                              : "rgba(255,255,255,0.05)",
-                        },
-                      }}
-                    >
+                        hover
+                        key={r.sessionId}
+                        onClick={() => {
+                            if (r.attendanceStatus !== "Closed") {
+                            setSelectedSession(r);
+                            setUpdateSessionOpen(true);
+                            }
+                        }}
+                        sx={{
+                            "&:last-child td, &:last-child th": { border: 0 },
+                            cursor: r.attendanceStatus !== "Closed" ? "pointer" : "default",
+                            opacity: r.attendanceStatus === "Closed" ? 0.6 : 1,
+                            transition: "background 0.2s ease",
+                            "&:hover": {
+                            backgroundColor:
+                                r.attendanceStatus === "Closed"
+                                ? "inherit"
+                                : theme.palette.mode === "light"
+                                    ? "rgba(255,255,255,0.3)"
+                                    : "rgba(255,255,255,0.05)",
+                            },
+                        }}
+                        >
                       <TableCell
                         sx={{
                           position: "sticky",
@@ -415,7 +430,7 @@ export default function SummaryTable() {
                       <TableCell>{formatTime(r.checkInTime)}</TableCell>
                       <TableCell>{formatTime(r.checkOutTime)}</TableCell>
                       <TableCell>{toHHMM(r.totalMinutesWorked)}</TableCell>
-                      <TableCell>{toHHMM(r.breakMintues)}</TableCell>
+                      <TableCell>{toHHMM(r.breakMinutes)}</TableCell>
                       <TableCell>{toHHMM(r.overTimeMinutes)}</TableCell>
                     </TableRow>
                   ))}
@@ -446,11 +461,18 @@ export default function SummaryTable() {
       </CardContent>
     </Card>
 
-    <AdminSessionForm
-      open={addOpen}
-      onClose={() => setAddOpen(false)}
+    <AdminSessionCheckInForm
+      open={addSessionOpen}
+      onClose={() => setAddSessionOpen(false)}
       onCreated={forceRefresh}
     />
+
+    <AdminSessionUpdateForm
+        open={updateSessionOpen}
+        onClose={() => setUpdateSessionOpen(false)}
+        session={selectedSession}
+        onUpdated={forceRefresh}
+        />
 
     <GlassSnackbar
         open={snackbarOpen}

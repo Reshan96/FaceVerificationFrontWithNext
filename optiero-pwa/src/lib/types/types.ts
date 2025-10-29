@@ -16,6 +16,7 @@ export type Employee = {
 export type EmployeeAttendanceStatus = "Open" | "OnBreak" | "Closed" | "OnLeave";
 
 export type EmployeeAttendance = {
+  sessionId: number
   employeeId: number;
   employeeCode: string;
   employeeName: string;
@@ -26,7 +27,7 @@ export type EmployeeAttendance = {
   checkOutTime?: string | null;  // ISO string
   totalMinutesWorked: number;
   overTimeMinutes: number;
-  breakMintues: number;
+  breakMinutes: number;
 };
 
 export type BackendAttendance = Omit<EmployeeAttendance, "attendanceStatus"> & {
